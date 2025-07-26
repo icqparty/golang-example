@@ -29,7 +29,7 @@ func readConfig(filepath string) ConfigStruct {
 
 func main() {
 	var configPath string
-	var configDefaultPath = "config.yml"
+	configDefaultPath:= "config.yaml"
 	flag.StringVar(&configPath, "f", "", "путь к файлу конфигурации")
 	flag.Parse()
 
