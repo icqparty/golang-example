@@ -1,0 +1,9 @@
+
+services:
+  app:
+    container_name: app
+    volumes:
+      -  ./config.yaml:/app/config.yaml:ro
+    build: .
+    ports:
+      - "8080:8080"
