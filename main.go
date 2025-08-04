@@ -8,8 +8,20 @@ import (
 	"os"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gopkg.in/yaml.v3"
 )
+
+var requestCounter = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "http_requests_total1",
+		Help: "Количество запросов",
+	}, []string{"code"})
+
+func init() {
+	prometheus.MustRegister(requestCounter)
+}
 
 type ConfigStruct struct {
 	Port string `yaml:"port"`
@@ -51,12 +63,17 @@ func LoggerMiddleware(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func handlerHome(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, World!")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Hello World!"))
+	requestCounter.WithLabelValues("200").Inc()
+	start := time.Now()
+	requestCounter.WithLabelValues("time").Add(time.Since(start).Seconds())
 }
 
 func handlerHello(w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("name")
-	fmt.Fprintf(w, "Hello, %s!", name)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Hello ," + name + "!"))
 }
 
 func main() {
@@ -79,12 +96,12 @@ func main() {
 
 	http.HandleFunc("/", LoggerMiddleware(handlerHome))
 	http.HandleFunc("/hello", LoggerMiddleware(handlerHello))
+	http.Handle("/metrics", promhttp.Handler())
 
 	log.Printf("Сервер запущен и слушает порт %s ...", config.Port)
 
-
 	if config.SSL.Enabled {
-		err = http.ListenAndServeTLS(":"+config.Port, config.SSL.Cert,config.SSL.Key,  nil)
+		err = http.ListenAndServeTLS(":"+config.Port, config.SSL.Cert, config.SSL.Key, nil)
 	} else {
 		err = http.ListenAndServe(":"+config.Port, nil)
 	}
