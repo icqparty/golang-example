@@ -13,6 +13,11 @@ import (
 
 type ConfigStruct struct {
 	Port string `yaml:"port"`
+	SSL  struct {
+		Enabled bool   `yaml:"enabled"`
+		Cert    string `yaml:"cert"`
+		Key     string `yaml:"key"`
+	} `yaml:"ssl"`
 }
 
 func readConfig(filepath string) (*ConfigStruct, error) {
@@ -30,30 +35,29 @@ func readConfig(filepath string) (*ConfigStruct, error) {
 	return &config, nil
 }
 func LoggerMiddleware(next http.HandlerFunc) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-        start := time.Now()
-        
-        next.ServeHTTP(w, r)
-        
-        log.Printf(
-            "%s\t%s\t%s\t%s",
-            r.Method,
-            r.URL.Path,
-            r.RemoteAddr,
-            time.Since(start),
-        )
-    }
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		next.ServeHTTP(w, r)
+
+		log.Printf(
+			"%s\t%s\t%s\t%s",
+			r.Method,
+			r.URL.Path,
+			r.RemoteAddr,
+			time.Since(start),
+		)
+	}
 }
 
-
 func handlerHome(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, World!")
-	}
+	fmt.Fprintf(w, "Hello, World!")
+}
 
 func handlerHello(w http.ResponseWriter, r *http.Request) {
-		name := r.FormValue("name")
-		fmt.Fprintf(w, "Hello, %s!", name)
-	}
+	name := r.FormValue("name")
+	fmt.Fprintf(w, "Hello, %s!", name)
+}
 
 func main() {
 	var configPath string
@@ -62,7 +66,7 @@ func main() {
 
 	// Проверяем наличие пути к файлу конфигурации
 	if len(configPath) == 0 {
-		log.Fatalf( "Не указан файл конфигурации.")
+		log.Fatalf("Не указан файл конфигурации.")
 		os.Exit(1)
 	}
 
@@ -73,16 +77,21 @@ func main() {
 		os.Exit(1)
 	}
 
-
-    http.HandleFunc("/", LoggerMiddleware(handlerHome))
-    http.HandleFunc("/hello", LoggerMiddleware(handlerHello))
+	http.HandleFunc("/", LoggerMiddleware(handlerHome))
+	http.HandleFunc("/hello", LoggerMiddleware(handlerHello))
 
 	log.Printf("Сервер запущен и слушает порт %s ...", config.Port)
-	err = http.ListenAndServe(":"+config.Port, nil)
+
+
+	if config.SSL.Enabled {
+		err = http.ListenAndServeTLS(":"+config.Port, config.SSL.Cert,config.SSL.Key,  nil)
+	} else {
+		err = http.ListenAndServe(":"+config.Port, nil)
+	}
+
 	if err != nil {
 		log.Fatalf("Ошибка сервера: %v\n", err)
 		os.Exit(1)
 	}
-    
 
 }
