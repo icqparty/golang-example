@@ -87,6 +87,8 @@ func main() {
 		os.Exit(1)
 	}
 
+
+
 	// Читаем конфигурационный файл
 	config, err := readConfig(configPath)
 	if err != nil {
@@ -94,9 +96,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	http.HandleFunc("/", LoggerMiddleware(handlerHome))
-	http.HandleFunc("/hello", LoggerMiddleware(handlerHello))
-	http.Handle("/metrics", promhttp.Handler())
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", handlerHome)
+	mux.HandleFunc("/hello", handlerHello)
+	mux.Handle("/metrics", promhttp.Handler())
+
+	handler := loggingMiddleware(mux)
+
+    server := &http.Server{
+        Addr:           ":8080",
+        Handler:        handler,
+        ReadTimeout:    10 * time.Second,
+        WriteTimeout:   10 * time.Second,
+        MaxHeaderBytes: 1 << 20,
+    }
 
 	log.Printf("Сервер запущен и слушает порт %s ...", config.Port)
 

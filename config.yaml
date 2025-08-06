@@ -1,6 +1,6 @@
-port: 443
+port: 8080
 
 ssl:
-  enabled: true
+  enabled: false
   cert: ./selfsigned.crt 
   key: ./private.key
