@@ -12,15 +12,27 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gopkg.in/yaml.v3"
 )
-
 var requestCounter = prometheus.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: "http_requests_total1",
-		Help: "Количество запросов",
-	}, []string{"code"})
+        prometheus.CounterOpts{
+            Name: "http_requests_total",
+            Help: "Total number of HTTP requests.",
+        },
+        []string{"endpoint"},
+    )
+
+var  requestLatency = prometheus.NewHistogramVec(
+	prometheus.HistogramOpts{
+		Name:    "http_request_duration_seconds",
+		Help:    "HTTP request latency in seconds.",
+		Buckets: []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10}, // Группы задержки
+	},
+	[]string{"endpoint"},
+)
+
 
 func init() {
 	prometheus.MustRegister(requestCounter)
+	prometheus.MustRegister(requestLatency)
 }
 
 type ConfigStruct struct {
@@ -46,28 +58,25 @@ func readConfig(filepath string) (*ConfigStruct, error) {
 
 	return &config, nil
 }
-func LoggerMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+
+
+func LoggerMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
+        next.ServeHTTP(w, r)
 
-		next.ServeHTTP(w, r)
+		duration := float64(time.Since(start).Seconds())
+        requestLatency.WithLabelValues(r.URL.Path).Observe(duration)
+        requestCounter.WithLabelValues(r.URL.Path).Inc()
+		requestCounter.WithLabelValues(r.URL.Path).Inc()
 
-		log.Printf(
-			"%s\t%s\t%s\t%s",
-			r.Method,
-			r.URL.Path,
-			r.RemoteAddr,
-			time.Since(start),
-		)
-	}
+		log.Printf("%s %s %v\n", r.Method, r.URL.Path, duration)
+    })
 }
 
 func handlerHome(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Hello World!"))
-	requestCounter.WithLabelValues("200").Inc()
-	start := time.Now()
-	requestCounter.WithLabelValues("time").Add(time.Since(start).Seconds())
 }
 
 func handlerHello(w http.ResponseWriter, r *http.Request) {
@@ -102,10 +111,10 @@ func main() {
 	mux.HandleFunc("/hello", handlerHello)
 	mux.Handle("/metrics", promhttp.Handler())
 
-	handler := loggingMiddleware(mux)
+	handler := LoggerMiddleware(mux)
 
     server := &http.Server{
-        Addr:           ":8080",
+        Addr:           ":"+config.Port,
         Handler:        handler,
         ReadTimeout:    10 * time.Second,
         WriteTimeout:   10 * time.Second,
@@ -115,9 +124,9 @@ func main() {
 	log.Printf("Сервер запущен и слушает порт %s ...", config.Port)
 
 	if config.SSL.Enabled {
-		err = http.ListenAndServeTLS(":"+config.Port, config.SSL.Cert, config.SSL.Key, nil)
+		err = server.ListenAndServeTLS(config.SSL.Cert, config.SSL.Key)
 	} else {
-		err = http.ListenAndServe(":"+config.Port, nil)
+		err = server.ListenAndServe()
 	}
 
 	if err != nil {
