@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-golang-example
+data:
+  config.yaml: |
+    port: 8080
+    ssl:
+      enabled: false
+      cert: /certs/selfsigned.crt 
+      key: /certs/private.key

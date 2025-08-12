@@ -5,10 +5,13 @@ COPY go.mod ./
 RUN go mod download
 
 COPY . .
+RUN apk add --no-cache bash
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 FROM alpine:latest
-WORKDIR /root/
-COPY --from=builder /app/main .
+RUN mkdir /app
+WORKDIR /app
+COPY --from=builder /app/main ./main
+RUN chmod +x /app/main
 EXPOSE 8080
-CMD ["./main"]
+CMD ["/app/main","-f","./config/config.yaml"]
