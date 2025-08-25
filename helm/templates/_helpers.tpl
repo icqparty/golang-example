@@ -50,13 +50,4 @@ app.kubernetes.io/name: {{ include "golang-example.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
-{{/*
-Create the name of the service account to use
-*/}}
-{{- define "golang-example.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "golang-example.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
-{{- end }}
-{{- end }}
+

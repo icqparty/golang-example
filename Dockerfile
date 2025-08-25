@@ -13,5 +13,5 @@ RUN mkdir /app
 WORKDIR /app
 COPY --from=builder /app/main ./main
 RUN chmod +x /app/main
-EXPOSE 8080
+EXPOSE 80 443
 CMD ["/app/main","-f","./config/config.yaml"]

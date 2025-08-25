@@ -3,9 +3,11 @@ kind: ConfigMap
 metadata:
   name: config-golang-example
 data:
-  config.yaml: |
-    port: 8080
+  config.yaml: |-
+    port: 443
     ssl:
-      enabled: false
-      cert: /certs/selfsigned.crt 
-      key: /certs/private.key
+      enabled: true
+      cert: "/app/certs/{{ .Values.ssl.crtFile }}"  
+      key: "/app/certs/{{ .Values.ssl.keyFile }}"
+
+#selfsigned.crt private.key
