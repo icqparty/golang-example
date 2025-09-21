@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "golang-example.labels" . | nindent 4 }}
 spec:
+  replicas: {{ .Values.replicas }} 
   selector:
     matchLabels:
       {{- include "golang-example.selectorLabels" . | nindent 6 }}
@@ -27,7 +28,7 @@ spec:
           args: ["/app/main","-f","/app/config/config.yaml"]
           ports:
             - name: http
-              containerPort: 443
+              containerPort: 80
               protocol: TCP
           volumeMounts: 
           - name: cert-volume

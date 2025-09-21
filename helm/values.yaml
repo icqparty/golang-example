@@ -3,10 +3,10 @@ image:
   repository: registry.local:5000/icqparty/golang-example-app
   pullPolicy: IfNotPresent
   tag: "5"
-
+replicas: 5
 ssl:
-  secret: secret-golang-example
-  crtFile: selfsigned.crt
-  keyFile: private.key
+  secret: letsencrypt-golang-ge
+  crtFile: tls.crt
+  keyFile: tls.key
 
-host: golang-example.local
+host: golang.k3s.icqparty.online

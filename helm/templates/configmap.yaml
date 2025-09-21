@@ -4,9 +4,9 @@ metadata:
   name: config-golang-example
 data:
   config.yaml: |-
-    port: 443
+    port: 80
     ssl:
-      enabled: true
+      enabled: false
       cert: "/app/certs/{{ .Values.ssl.crtFile }}"  
       key: "/app/certs/{{ .Values.ssl.keyFile }}"
 
